@@ -27,9 +27,7 @@ node_modules/
 __pycache__/
 .env
 .claude
-backend/data/distritos_master.parquet
 dist/
 datos_censo/
-backend/data/*.parquet
 *.csv
 *.xlsx

@@ -3,6 +3,7 @@ FROM node:20-alpine AS frontend
 WORKDIR /frontend
 COPY frontend/package*.json ./
 RUN npm install
+COPY tokens.css /tokens.css
 COPY frontend/ .
 RUN npm run build
 

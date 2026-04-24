@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+geopandas
+pandas
+pyarrow
+geopy
+shapely
+python-multipart
+openpyxl

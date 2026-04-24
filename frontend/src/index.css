@@ -1,0 +1,19 @@
+@import "tailwindcss";
+@import "../../tokens.css";
+
+/* Full-screen app overrides */
+:root  { height: 100%; }
+body   { height: 100%; overflow: hidden; }
+#root  { height: 100%; width: 100%; }
+
+.leaflet-container {
+  height: 100% !important;
+  width:  100% !important;
+  background: #1e293b !important;
+}
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-thumb {
+  background: var(--ink-200);
+  border-radius: 10px;
+}

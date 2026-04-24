@@ -1,10 +1,12 @@
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Query
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Query, Request
 from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 import geopandas as gpd
 import pandas as pd
 import json
 import io
+import os
+import shutil
 from pathlib import Path
 from geopy.geocoders import Nominatim
 from geopy.extra.rate_limiter import RateLimiter
@@ -22,7 +24,8 @@ app.add_middleware(
 BASE_DIR      = Path(__file__).resolve().parent
 DATA_PATH     = BASE_DIR / "data" / "distritos_master.parquet"
 COMUNAS_PATH  = BASE_DIR / "data" / "comunas_master.parquet"
-PATH_MANZANAS = BASE_DIR.parent / "datos_censo" / "Cartografia_censo2024_Pais_Manzanas.parquet"
+# Configurable vía env var; por defecto en backend/data/ para Railway volumes
+PATH_MANZANAS = Path(os.environ.get("MANZANAS_PATH", str(BASE_DIR / "data" / "manzanas.parquet")))
 
 # --- CARGA INICIAL ---
 if not DATA_PATH.exists():
@@ -81,6 +84,11 @@ def get_manzanas(
     maxx: float = Query(...), maxy: float = Query(...)
 ):
     """Retorna manzanas para el bbox visible. Solo viable con zoom alto (>= 13)."""
+    if not PATH_MANZANAS.exists():
+        raise HTTPException(
+            status_code=503,
+            detail="Datos de manzanas no disponibles en este servidor. Monta el archivo via Railway Volume en MANZANAS_PATH."
+        )
     try:
         # Determinar qué comunas caen en el bbox usando los distritos ya cargados
         gdf_dist_visible = GDF_DISTRITOS.cx[minx:maxx, miny:maxy]
@@ -173,6 +181,45 @@ async def geocodificar_archivo(
         raise HTTPException(status_code=400, detail="'columnas_direccion' debe ser un JSON Array.")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+
+# --- ENDPOINT DE ADMIN (carga de archivos al Volume) ---
+
+@app.post("/admin/upload-manzanas")
+async def upload_manzanas(request: Request, file: UploadFile = File(...)):
+    """
+    Carga manzanas.parquet al Railway Volume.
+    Requiere header X-Admin-Token con el valor de la env var ADMIN_TOKEN.
+    Deshabilitar una vez cargado el archivo (remover o proteger con firewall).
+    """
+    admin_token = os.environ.get("ADMIN_TOKEN")
+    if not admin_token or request.headers.get("X-Admin-Token") != admin_token:
+        raise HTTPException(status_code=403, detail="Token de administrador inválido.")
+
+    PATH_MANZANAS.parent.mkdir(parents=True, exist_ok=True)
+
+    def _save():
+        with open(PATH_MANZANAS, "wb") as f:
+            shutil.copyfileobj(file.file, f)
+
+    await run_in_threadpool(_save)
+
+    size_mb = round(PATH_MANZANAS.stat().st_size / 1024 / 1024, 1)
+    return {"ok": True, "ruta": str(PATH_MANZANAS), "tamaño_mb": size_mb}
+
+
+# --- FRONTEND ESTÁTICO ---
+
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
+FRONTEND_DIR = BASE_DIR.parent / "frontend" / "dist"
+if FRONTEND_DIR.exists():
+    app.mount("/assets", StaticFiles(directory=FRONTEND_DIR / "assets"), name="assets")
+
+    @app.get("/{full_path:path}")
+    def serve_spa(full_path: str):
+        return FileResponse(FRONTEND_DIR / "index.html")
 
 
 if __name__ == "__main__":

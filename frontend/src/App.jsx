@@ -85,8 +85,7 @@ const NIVELES = [
   { id: 'manzana',  label: 'Manzana'  },
 ];
 
-// Detecta la URL de Railway o usa localhost para desarrollo local
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
 function App() {
   const [activeVar, setActiveVar]         = useState("n_per");

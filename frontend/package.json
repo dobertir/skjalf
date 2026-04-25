@@ -12,13 +12,15 @@
   "dependencies": {
     "@tailwindcss/postcss": "^4.2.4",
     "axios": "^1.15.2",
+    "d3-array": "^3.2.4",
     "leaflet": "^1.9.4",
     "leaflet.heat": "^0.2.0",
     "leaflet.markercluster": "^1.5.3",
     "lucide-react": "^1.11.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
-    "react-leaflet": "^5.0.0"
+    "react-leaflet": "^5.0.0",
+    "simple-statistics": "^7.8.9"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

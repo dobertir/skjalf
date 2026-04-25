@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Skjalf — App</title>
+<link rel="stylesheet" href="tokens.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  html, body, #root { height: 100%; margin: 0; overflow: hidden; }
+  body { background: var(--paper); }
+
+  /* ---- shell ---- */
+  .app { display: grid; grid-template-columns: 280px 1fr; height: 100vh; }
+
+  /* ---- sidebar refinado ---- */
+  .sb { background: var(--paper-2); border-right: 1px solid var(--ink-200); display: flex; flex-direction: column; min-height: 0; }
+  .sb-brand { padding: 18px 18px 14px; border-bottom: 1px solid var(--ink-200); display: flex; flex-direction: column; gap: 6px; }
+  .sb-brand-row { display: flex; align-items: center; gap: 10px; }
+  .sb-brand .wm { font-family: var(--font-brand); font-size: 24px; line-height: 28px; color: var(--ink-900); }
+  .sb-brand .wm em { color: var(--highlight); font-style: normal; }
+  .sb-brand .tag { font-family: var(--font-mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-400); }
+
+  .sb-search { padding: 10px 14px; border-bottom: 1px solid var(--ink-200); position: relative; }
+  .sb-search input {
+    width: 100%; height: 30px; padding: 0 10px 0 28px;
+    background: var(--card); border: 1px solid var(--ink-200); border-radius: 6px;
+    font-size: 12px; font-family: var(--font-sans); color: var(--ink-900);
+  }
+  .sb-search input::placeholder { color: var(--ink-400); }
+  .sb-search input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(42,60,143,0.10); }
+  .sb-search .sicon { position: absolute; left: 22px; top: 50%; transform: translateY(-50%); color: var(--ink-400); pointer-events: none; }
+  .sb-search kbd {
+    position: absolute; right: 22px; top: 50%; transform: translateY(-50%);
+    font-family: var(--font-mono); font-size: 9px; color: var(--ink-400);
+    background: var(--ink-100); padding: 1px 5px; border-radius: 3px;
+  }
+
+  /* nivel geo */
+  .geo-level { padding: 12px 14px; border-bottom: 1px solid var(--ink-200); }
+  .geo-level .lbl { font-family: var(--font-mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-400); margin-bottom: 6px; display: flex; justify-content: space-between; }
+  .geo-level .seg { display: flex; gap: 2px; background: var(--ink-100); padding: 2px; border-radius: 6px; }
+  .geo-level .seg button {
+    flex: 1; height: 26px; border: 0; background: transparent; border-radius: 4px;
+    font-size: 11px; color: var(--ink-500); cursor: pointer; font-weight: 500;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  }
+  .geo-level .seg button.active { background: var(--accent); color: #fff; box-shadow: 0 1px 3px rgba(42,60,143,0.25); }
+  .geo-level .seg button .scale { font-family: var(--font-mono); font-size: 8px; opacity: 0.7; letter-spacing: 0.08em; }
+
+  /* nav variables */
+  .sb-nav { flex: 1; min-height: 0; overflow-y: auto; padding: 6px 8px 12px; }
+  .sb-nav::-webkit-scrollbar { width: 4px; }
+  .sb-nav::-webkit-scrollbar-thumb { background: var(--ink-200); border-radius: 10px; }
+
+  .nav-section-head {
+    display: flex; align-items: center; justify-content: space-between; width: 100%;
+    padding: 7px 8px; border: 0; background: transparent; cursor: pointer; border-radius: 4px;
+    font-family: var(--font-mono); font-size: 9.5px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-400);
+  }
+  .nav-section-head:hover { background: var(--ink-100); color: var(--ink-700); }
+  .nav-section-head .count { font-weight: 400; opacity: 0.6; }
+  .nav-section-head.has-active { color: var(--accent); }
+
+  .nav-var {
+    display: flex; align-items: center; gap: 8px;
+    width: 100%; padding: 5px 8px 5px 10px;
+    border: 0; background: transparent; border-radius: 4px;
+    font-size: 12.5px; color: var(--ink-700); cursor: pointer; text-align: left;
+    position: relative;
+  }
+  .nav-var:hover { background: var(--ink-100); }
+  .nav-var.active { background: var(--accent-dim); color: var(--accent); font-weight: 500; }
+  .nav-var.active::before {
+    content: ""; position: absolute; left: 2px; top: 6px; bottom: 6px; width: 2px;
+    background: var(--accent); border-radius: 0 2px 2px 0;
+  }
+  .nav-var .pin {
+    margin-left: auto; opacity: 0; color: var(--ink-300);
+    transition: opacity 120ms;
+  }
+  .nav-var:hover .pin { opacity: 1; }
+  .nav-var .pin.pinned { opacity: 1; color: var(--highlight); }
+
+  .pin-list { padding: 4px 8px 8px; border-bottom: 1px solid var(--ink-200); }
+  .pin-list .pin-item {
+    display: flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 4px;
+    font-size: 12px; color: var(--ink-700); cursor: pointer;
+  }
+  .pin-list .pin-item:hover { background: var(--ink-100); }
+  .pin-list .pin-item.active { background: var(--accent-dim); color: var(--accent); font-weight: 500; }
+  .pin-list .pin-item .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--highlight); flex-shrink: 0; }
+
+  /* footer sidebar — upload + datasets cargados */
+  .sb-foot { border-top: 1px solid var(--ink-200); padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 8px; }
+
+  /* ---- main ---- */
+  .main { position: relative; min-width: 0; display: flex; flex-direction: column; }
+  .topbar {
+    height: 48px; min-height: 48px; padding: 0 16px;
+    border-bottom: 1px solid var(--ink-200); background: var(--paper);
+    display: flex; align-items: center; gap: 12px;
+    position: relative; z-index: 30;
+  }
+  .topbar .crumbs { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink-500); }
+  .topbar .crumbs .sep { color: var(--ink-300); }
+  .topbar .crumbs .current { color: var(--ink-900); font-weight: 500; }
+
+  .toolbar-btn {
+    height: 28px; padding: 0 10px; border: 1px solid var(--ink-200); background: var(--card);
+    border-radius: 5px; font-size: 12px; color: var(--ink-700); cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px; font-family: inherit;
+  }
+  .toolbar-btn:hover { border-color: var(--ink-300); }
+  .toolbar-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .toolbar-btn.primary:hover { background: var(--accent-ink); }
+  .toolbar-btn.ghost { background: transparent; border-color: transparent; color: var(--ink-500); }
+  .toolbar-btn.ghost:hover { background: var(--ink-100); color: var(--ink-900); }
+  .toolbar-btn.icon { width: 28px; padding: 0; justify-content: center; }
+
+  /* mapa: superficie simulada (svg cuadriculado) */
+  .map-wrap { flex: 1; position: relative; background: #0E1117; overflow: hidden; }
+  .map-svg { width: 100%; height: 100%; display: block; }
+
+  /* ── HUD: panel de variable activa (arriba izq) ── */
+  .var-card {
+    position: absolute; top: 16px; left: 16px; width: 290px;
+    background: rgba(255,255,255,0.96); backdrop-filter: blur(10px);
+    border: 1px solid var(--ink-200); border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(18,21,26,0.10);
+    padding: 14px 16px;
+    z-index: 20;
+  }
+  .var-card .eyebrow { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-400); margin-bottom: 4px; }
+  .var-card h2 { font-family: var(--font-display); font-size: 19px; font-weight: 600; letter-spacing: -0.01em; color: var(--ink-900); margin: 0 0 10px; }
+  .var-card .row { display: flex; align-items: baseline; gap: 6px; }
+  .var-card .num { font-family: var(--font-mono); font-size: 22px; font-weight: 600; color: var(--ink-900); font-variant-numeric: tabular-nums; }
+  .var-card .delta { font-family: var(--font-mono); font-size: 11px; color: var(--pos); font-weight: 600; }
+  .var-card .units { font-size: 11px; color: var(--ink-500); }
+
+  /* ── leyenda con histograma ── */
+  .legend {
+    position: absolute; bottom: 18px; left: 16px;
+    background: rgba(255,255,255,0.97); backdrop-filter: blur(10px);
+    border: 1px solid var(--ink-200); border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(18,21,26,0.12);
+    padding: 12px 14px; width: 360px; z-index: 20;
+  }
+  .legend .lh { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .legend .lh .title { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-500); font-weight: 600; }
+  .legend .lh .actions { display: flex; gap: 4px; }
+  .legend .lh .actions button {
+    border: 0; background: transparent; padding: 2px 5px; border-radius: 3px; cursor: pointer;
+    font-family: var(--font-mono); font-size: 10px; color: var(--ink-400); text-transform: uppercase; letter-spacing: 0.1em;
+  }
+  .legend .lh .actions button.active { background: var(--accent-dim); color: var(--accent); }
+  .legend .lh .actions button:hover:not(.active) { background: var(--ink-100); color: var(--ink-700); }
+  .legend .hist { display: flex; align-items: flex-end; gap: 1px; height: 38px; margin-bottom: 4px; }
+  .legend .hist .bar { flex: 1; min-width: 4px; transition: opacity 120ms; cursor: pointer; }
+  .legend .hist .bar:hover { opacity: 0.75; }
+  .legend .hist .bar.dim { opacity: 0.25; }
+  .legend .ramp { display: flex; height: 8px; border-radius: 2px; overflow: hidden; margin-bottom: 4px; }
+  .legend .ramp .seg { flex: 1; cursor: pointer; }
+  .legend .scale-labels { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 10px; color: var(--ink-500); font-variant-numeric: tabular-nums; }
+  .legend .foot { display: flex; justify-content: space-between; align-items: center; font-family: var(--font-mono); font-size: 10px; color: var(--ink-400); margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--ink-100); }
+  .legend .foot a { color: var(--accent); cursor: pointer; }
+
+  /* ── hover feature card (arriba der) ── */
+  .hover-card {
+    position: absolute; top: 16px; right: 16px; width: 280px;
+    background: rgba(255,255,255,0.97); backdrop-filter: blur(10px);
+    border: 1px solid var(--ink-200); border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(18,21,26,0.12);
+    padding: 14px 16px; z-index: 20;
+  }
+  .hover-card .eyebrow { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--accent); margin-bottom: 2px; }
+  .hover-card h3 { font-family: var(--font-display); font-size: 16px; font-weight: 600; color: var(--ink-900); margin: 0 0 10px; }
+  .hover-card .kpi { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+  .hover-card .kpi .v { font-family: var(--font-mono); font-size: 20px; font-weight: 600; color: var(--ink-900); }
+  .hover-card .kpi .pct { font-family: var(--font-mono); font-size: 11px; color: var(--ink-500); }
+  .hover-card .rank-row { font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-500); display: flex; justify-content: space-between; padding: 4px 0; border-top: 1px solid var(--ink-100); }
+  .hover-card .rank-row .v { color: var(--ink-900); font-weight: 500; }
+  .hover-card .spark { margin: 6px 0 8px; }
+
+  /* ── controles flotantes mapa (zoom, basemap, north arrow) ── */
+  .map-controls { position: absolute; right: 16px; bottom: 18px; display: flex; flex-direction: column; gap: 6px; z-index: 20; }
+  .map-ctl-grp {
+    background: rgba(255,255,255,0.97); border: 1px solid var(--ink-200); border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(18,21,26,0.08); display: flex; flex-direction: column;
+  }
+  .map-ctl-grp button {
+    width: 32px; height: 32px; border: 0; background: transparent; cursor: pointer;
+    color: var(--ink-700); display: grid; place-items: center;
+  }
+  .map-ctl-grp button:hover { background: var(--ink-100); color: var(--ink-900); }
+  .map-ctl-grp button + button { border-top: 1px solid var(--ink-200); }
+
+  /* ── compare bar (cuando active) ── */
+  .compare-bar {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 2px; height: 100%; background: var(--highlight);
+    z-index: 15; pointer-events: none; opacity: 0;
+  }
+  .compare-bar.on { opacity: 0.9; }
+  .compare-bar::before, .compare-bar::after {
+    content: ""; position: absolute; left: 50%; transform: translateX(-50%);
+    background: var(--highlight); width: 28px; height: 28px; border-radius: 50%;
+  }
+  .compare-bar::before { top: calc(50% - 14px); }
+  .compare-handle {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 36px; height: 36px; background: var(--highlight); border-radius: 50%;
+    z-index: 16; display: grid; place-items: center; color: #fff;
+    box-shadow: 0 2px 8px rgba(107,79,187,0.4); cursor: ew-resize; opacity: 0;
+  }
+  .compare-handle.on { opacity: 1; }
+
+  .compare-label {
+    position: absolute; top: 16px; padding: 4px 10px; border-radius: 999px;
+    font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em;
+    background: rgba(255,255,255,0.97); border: 1px solid var(--ink-200);
+    z-index: 15; opacity: 0;
+  }
+  .compare-label.on { opacity: 1; }
+  .compare-label.left { left: 22%; color: var(--accent); }
+  .compare-label.right { right: 22%; color: var(--highlight); }
+
+  /* ── modal mejorado ── */
+  .modal-bg {
+    position: fixed; inset: 0; background: rgba(18,21,26,0.55); backdrop-filter: blur(4px);
+    display: grid; place-items: center; z-index: 1000;
+  }
+  .modal {
+    width: 560px; max-height: 90vh; background: var(--card);
+    border: 1px solid var(--ink-200); border-radius: 10px;
+    box-shadow: 0 24px 64px rgba(18,21,26,0.25);
+    overflow: hidden; display: flex; flex-direction: column;
+  }
+  .modal-h { padding: 16px 20px; border-bottom: 1px solid var(--ink-200); display: flex; align-items: center; gap: 12px; }
+  .modal-h h3 { font-family: var(--font-display); font-size: 18px; font-weight: 600; margin: 0; flex: 1; }
+  .modal-h .close { width: 26px; height: 26px; border: 0; background: transparent; border-radius: 4px; cursor: pointer; color: var(--ink-500); display: grid; place-items: center; }
+  .modal-h .close:hover { background: var(--ink-100); color: var(--ink-900); }
+
+  .stepper { display: flex; gap: 8px; padding: 14px 20px; background: var(--paper-2); border-bottom: 1px solid var(--ink-200); }
+  .step { display: flex; align-items: center; gap: 8px; flex: 1; font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-400); }
+  .step .n {
+    width: 18px; height: 18px; border-radius: 50%; background: var(--ink-200); color: var(--ink-500);
+    display: grid; place-items: center; font-size: 10px; font-weight: 600;
+  }
+  .step.active .n { background: var(--accent); color: #fff; }
+  .step.active { color: var(--accent); }
+  .step.done .n { background: var(--pos); color: #fff; }
+  .step .line { flex: 1; height: 1px; background: var(--ink-200); }
+
+  .modal-b { padding: 18px 20px; overflow-y: auto; }
+  .modal-f { padding: 14px 20px; border-top: 1px solid var(--ink-200); display: flex; gap: 10px; justify-content: space-between; align-items: center; background: var(--paper-2); }
+
+  .col-list { display: flex; flex-direction: column; gap: 4px; max-height: 280px; overflow-y: auto; }
+  .col-item {
+    display: flex; align-items: center; gap: 10px; padding: 8px 10px;
+    border: 1px solid var(--ink-200); border-radius: 6px; cursor: pointer; background: var(--card);
+    transition: border-color 120ms;
+  }
+  .col-item:hover { border-color: var(--ink-300); }
+  .col-item.selected { border-color: var(--accent); background: var(--accent-dim); }
+  .col-item.tag { border-color: var(--highlight); background: var(--highlight-dim); }
+  .col-item .name { font-size: 13px; color: var(--ink-900); font-weight: 500; flex: 1; }
+  .col-item .preview { font-family: var(--font-mono); font-size: 11px; color: var(--ink-400); }
+  .col-item .role-chip {
+    font-family: var(--font-mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em;
+    padding: 2px 6px; border-radius: 3px;
+  }
+  .role-chip.address { background: var(--accent); color: #fff; }
+  .role-chip.tag { background: var(--highlight); color: #fff; }
+  .role-chip.suggested { background: var(--ink-100); color: var(--ink-500); border: 1px solid var(--ink-200); }
+
+  /* upload zone */
+  .drop {
+    border: 1.5px dashed var(--ink-300); border-radius: 8px; padding: 28px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+    text-align: center; background: var(--paper-2); cursor: pointer; transition: border-color 120ms;
+  }
+  .drop:hover { border-color: var(--accent); }
+  .drop .glyph { width: 38px; height: 38px; color: var(--ink-400); }
+  .drop h4 { font-family: var(--font-display); font-size: 15px; margin: 0; }
+  .drop p { font-size: 12px; color: var(--ink-500); margin: 0; }
+
+  /* onboarding */
+  .onboard {
+    position: absolute; inset: 0; background: rgba(247,246,242,0.96); backdrop-filter: blur(8px);
+    z-index: 25; display: grid; place-items: center; padding: 40px;
+  }
+  .onboard-card { max-width: 720px; text-align: center; }
+  .onboard-card h1 { font-family: var(--font-display); font-size: 32px; font-weight: 600; letter-spacing: -0.02em; margin: 18px 0 8px; }
+  .onboard-card .lead { font-size: 14.5px; color: var(--ink-500); line-height: 1.6; margin: 0 auto 28px; max-width: 520px; }
+  .onboard-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; text-align: left; }
+  .onboard-item { background: var(--card); border: 1px solid var(--ink-200); border-radius: 8px; padding: 18px; }
+  .onboard-item .num { font-family: var(--font-mono); font-size: 10px; color: var(--ink-400); text-transform: uppercase; letter-spacing: 0.14em; }
+  .onboard-item h4 { font-family: var(--font-display); font-size: 15px; margin: 4px 0 6px; }
+  .onboard-item p { font-size: 12.5px; color: var(--ink-500); line-height: 1.5; margin: 0; }
+
+  /* tooltip-style coordenadas en cursor */
+  .coord-readout {
+    position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%);
+    background: rgba(18,21,26,0.78); color: #F7F6F2;
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em;
+    padding: 4px 10px; border-radius: 999px; z-index: 18; pointer-events: none;
+    text-transform: uppercase;
+  }
+
+  /* tweaks panel */
+  .tweaks {
+    position: fixed; bottom: 16px; right: 16px; z-index: 100;
+    background: var(--card); border: 1px solid var(--ink-200); border-radius: 8px;
+    box-shadow: 0 12px 32px rgba(18,21,26,0.18); width: 280px;
+  }
+  .tweaks h5 { font-family: var(--font-display); font-size: 13px; margin: 0; padding: 12px 14px 8px; border-bottom: 1px solid var(--ink-200); display: flex; align-items: center; justify-content: space-between; }
+  .tweaks .twb { padding: 12px 14px; }
+  .tweaks .grp { margin-bottom: 12px; }
+  .tweaks .grp:last-child { margin: 0; }
+  .tweaks label { display: block; font-family: var(--font-mono); font-size: 9.5px; color: var(--ink-400); text-transform: uppercase; letter-spacing: 0.14em; margin-bottom: 4px; }
+  .tweaks .opts { display: flex; gap: 4px; flex-wrap: wrap; }
+  .tweaks .opts button {
+    padding: 4px 8px; border-radius: 4px; border: 1px solid var(--ink-200); background: var(--card);
+    font-size: 11px; cursor: pointer; color: var(--ink-700);
+  }
+  .tweaks .opts button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<!-- ===========================================================
+     Iconos (Lucide-style, líneas finas)
+     =========================================================== -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-search" viewBox="0 0 16 16"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.5" fill="none"/><line x1="11" y1="11" x2="14" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 16 16"><path d="M8 1.5 L13.5 7 L8 14.5 L2.5 7 Z" stroke="currentColor" stroke-width="1.3" fill="none"/></symbol>
+    <symbol id="i-pin-fill" viewBox="0 0 16 16"><path d="M8 1.5 L13.5 7 L8 14.5 L2.5 7 Z" fill="currentColor"/></symbol>
+    <symbol id="i-up" viewBox="0 0 16 16"><path d="M3 11 V13 H13 V11 M8 9 V2 M5 5 L8 2 L11 5" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-x" viewBox="0 0 16 16"><line x1="4" y1="4" x2="12" y2="12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="12" y1="4" x2="4" y2="12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 16 16"><line x1="8" y1="3" x2="8" y2="13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><line x1="3" y1="8" x2="13" y2="8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+    <symbol id="i-minus" viewBox="0 0 16 16"><line x1="3" y1="8" x2="13" y2="8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+    <symbol id="i-layers" viewBox="0 0 16 16"><path d="M8 2 L14 5 L8 8 L2 5 Z M2 8 L8 11 L14 8 M2 11 L8 14 L14 11" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linejoin="round"/></symbol>
+    <symbol id="i-share" viewBox="0 0 16 16"><circle cx="4" cy="8" r="1.6" fill="currentColor"/><circle cx="12" cy="3.5" r="1.6" fill="currentColor"/><circle cx="12" cy="12.5" r="1.6" fill="currentColor"/><line x1="5.5" y1="7.2" x2="10.5" y2="4.4" stroke="currentColor" stroke-width="1.2"/><line x1="5.5" y1="8.8" x2="10.5" y2="11.6" stroke="currentColor" stroke-width="1.2"/></symbol>
+    <symbol id="i-download" viewBox="0 0 16 16"><path d="M3 12 V14 H13 V12 M8 2 V11 M5 8 L8 11 L11 8" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-compare" viewBox="0 0 16 16"><rect x="2" y="3" width="5" height="10" stroke="currentColor" stroke-width="1.3" fill="none"/><rect x="9" y="3" width="5" height="10" stroke="currentColor" stroke-width="1.3" fill="none"/></symbol>
+    <symbol id="i-info" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3" fill="none"/><line x1="8" y1="7" x2="8" y2="11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="5" r="0.8" fill="currentColor"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 16 16"><path d="M5 6 L8 9 L11 6" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-doc" viewBox="0 0 16 16"><path d="M4 1.5 H10 L13 4.5 V14.5 H4 Z M10 1.5 V4.5 H13" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linejoin="round"/></symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 16 16"><line x1="3" y1="8" x2="13" y2="8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M9 4 L13 8 L9 12" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 16 16"><path d="M1.5 8 C 4 4, 12 4, 14.5 8 C 12 12, 4 12, 1.5 8 Z" stroke="currentColor" stroke-width="1.3" fill="none"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.3" fill="none"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 16 16"><path d="M3 4 H13 M5 4 V13 H11 V4 M6 4 V2 H10 V4" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linejoin="round"/></symbol>
+    <symbol id="i-north" viewBox="0 0 16 16"><polygon points="8,1 10.5,8 8,6.5 5.5,8" fill="currentColor"/><polygon points="8,15 5.5,8 8,9.5 10.5,8" fill="currentColor" opacity="0.4"/><text x="8" y="10.6" text-anchor="middle" font-family="monospace" font-size="3.5" fill="currentColor">N</text></symbol>
+
+    <!-- Skjalf mark (mismo del logo, simplificado) -->
+    <symbol id="sk-mark" viewBox="0 0 28 34">
+      <path d="M14 1.5 L26.5 14 L14 32.5 L1.5 14 Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter"/>
+      <line x1="14" y1="6" x2="14" y2="22" stroke="currentColor" stroke-width="0.9" stroke-opacity="0.35"/>
+      <line x1="6" y1="14" x2="22" y2="14" stroke="currentColor" stroke-width="0.9" stroke-opacity="0.35"/>
+      <path d="M9 9 L17 14 L9 19 L17 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"/>
+      <circle cx="14" cy="3.6" r="1.1" fill="currentColor"/>
+    </symbol>
+  </defs>
+</svg>
+
+<script type="text/babel" src="app.jsx"></script>
+</body>
+</html>

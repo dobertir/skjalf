@@ -40,6 +40,25 @@
   --neg:        #9B3D2E;    /* negative — brick */
   --warn:       #8A6A1E;    /* warn — dark amber */
 
+  /* ── Choropleth ramps (5 stops each) ─────────────────────────────── */
+  --ramp-indigo-1: #F1EEF6;  --ramp-indigo-2: #BDC9E1;  --ramp-indigo-3: #74A9CF;
+  --ramp-indigo-4: #3B4FB8;  --ramp-indigo-5: #2A3C8F;
+
+  --ramp-viridis-1: #FDE725; --ramp-viridis-2: #90D743; --ramp-viridis-3: #35B779;
+  --ramp-viridis-4: #21908C; --ramp-viridis-5: #443983;
+
+  --ramp-ochre-1: #FFF5D6;   --ramp-ochre-2: #FAD679;   --ramp-ochre-3: #E8A33D;
+  --ramp-ochre-4: #B6862C;   --ramp-ochre-5: #7A5A1C;
+
+  --ramp-pivot-1: #9B3D2E;   --ramp-pivot-2: #E6A693;   --ramp-pivot-3: #F2EDE5;
+  --ramp-pivot-4: #A8B4E0;   --ramp-pivot-5: #2A3C8F;
+
+  /* ── Brand mark sizes ────────────────────────────────────────────── */
+  --mark-sm: 16px;
+  --mark-md: 22px;
+  --mark-lg: 28px;
+  --mark-xl: 56px;
+
   /* ── Type ───────────────────────────────────────────────────────── */
   --font-brand:   "Abel", sans-serif;
   --font-display: "Archivo", sans-serif;

@@ -85,7 +85,7 @@ const NIVELES = [
   { id: 'manzana',  label: 'Manzana'  },
 ];
 
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL ?? '';
 
 function App() {
   const [activeVar, setActiveVar]         = useState("n_per");

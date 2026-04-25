@@ -10,7 +10,7 @@ import axios from 'axios';
 const COLORS = ['#E7EAF7', '#A8B4E0', '#3B4FB8', '#2A3C8F', '#1B2766'];
 const MANZANA_MIN_ZOOM = 13;
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+const BASE_URL = import.meta.env.VITE_API_URL ?? '';
 
 const API_ENDPOINT = {
   distrito: `${BASE_URL}/api/geo/distritos`,

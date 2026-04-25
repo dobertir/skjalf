@@ -1,17 +1,74 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { RAMPS, RAMP_META, getBreaks } from '../utils/choropleth';
 
 const BINS = 24;
 const CLS = [
-  { id: 'quantile', label: 'Cuantiles' },
-  { id: 'jenks',    label: 'Jenks'     },
-  { id: 'equal',    label: 'Iguales'   },
+  {
+    id: 'quantile', label: 'Cuantiles',
+    tip: 'Divide los datos en 5 grupos con igual número de polígonos. Bueno para distribuciones sesgadas.'
+  },
+  {
+    id: 'jenks', label: 'Jenks',
+    tip: 'Natural Breaks: maximiza las diferencias entre grupos y minimiza la varianza interna. Ideal para datos con saltos naturales.'
+  },
+  {
+    id: 'equal', label: 'Iguales',
+    tip: 'Divide el rango numérico en 5 partes iguales. Útil cuando la escala absoluta importa.'
+  },
 ];
 const fmt = n => n >= 10000
   ? Math.round(n).toLocaleString('es-CL')
   : n >= 1000
     ? Math.round(n).toLocaleString('es-CL')
     : Number.isInteger(n) ? n : n.toFixed(1);
+
+function ClsButton({ cls, active, onClick }) {
+  const [show, setShow] = useState(false);
+  return (
+    <div style={{ position: 'relative', flex: 1 }}>
+      <button
+        onClick={onClick}
+        onMouseEnter={() => setShow(true)}
+        onMouseLeave={() => setShow(false)}
+        style={{
+          width: '100%',
+          fontFamily: 'var(--font-mono)', fontSize: 9,
+          padding: '3px 4px', borderRadius: 'var(--r-1)',
+          background: active ? 'var(--accent)' : 'var(--ink-100)',
+          color: active ? '#fff' : 'var(--ink-400)',
+          border: 'none', cursor: 'pointer', transition: 'all 120ms',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {cls.label}
+      </button>
+      {show && (
+        <div style={{
+          position: 'absolute', bottom: 'calc(100% + 6px)', left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'var(--ink-900)', color: '#fff',
+          fontFamily: 'var(--font-sans)', fontSize: 11, lineHeight: 1.5,
+          padding: '7px 10px', borderRadius: 'var(--r-3)',
+          width: 200, zIndex: 10,
+          boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+          pointerEvents: 'none',
+        }}>
+          <strong style={{ display: 'block', marginBottom: 2, fontFamily: 'var(--font-mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.6)' }}>
+            {cls.label}
+          </strong>
+          {cls.tip}
+          {/* Arrow */}
+          <div style={{
+            position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)',
+            width: 0, height: 0,
+            borderLeft: '5px solid transparent', borderRight: '5px solid transparent',
+            borderTop: '5px solid var(--ink-900)',
+          }} />
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Legend({ values, ramp, setRamp, classification, setClassification, dimRange, setDimRange, label }) {
   const palette = RAMPS[ramp] || RAMPS.indigo;
@@ -47,36 +104,29 @@ export default function Legend({ values, ramp, setRamp, classification, setClass
       borderRadius: 'var(--r-4)',
       boxShadow: 'var(--shadow-3)',
       padding: '12px 14px',
-      minWidth: 210, maxWidth: 240,
+      minWidth: 220, maxWidth: 260,
     }}>
 
-      {/* label + classification */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
-        <p style={{
-          fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 600,
-          textTransform: 'uppercase', letterSpacing: '0.14em',
-          color: 'var(--ink-500)', margin: 0,
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1,
-        }}>
-          {label}
-        </p>
-        <div style={{ display: 'flex', gap: 2, flexShrink: 0 }}>
-          {CLS.map(c => (
-            <button
-              key={c.id}
-              onClick={() => setClassification(c.id)}
-              style={{
-                fontFamily: 'var(--font-mono)', fontSize: 9,
-                padding: '2px 5px', borderRadius: 'var(--r-1)',
-                background: classification === c.id ? 'var(--accent)' : 'var(--ink-100)',
-                color: classification === c.id ? '#fff' : 'var(--ink-400)',
-                border: 'none', cursor: 'pointer', transition: 'all 120ms',
-              }}
-            >
-              {c.label}
-            </button>
-          ))}
-        </div>
+      {/* label */}
+      <p style={{
+        fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 600,
+        textTransform: 'uppercase', letterSpacing: '0.14em',
+        color: 'var(--ink-500)', margin: '0 0 7px',
+        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+      }}>
+        {label}
+      </p>
+
+      {/* classification buttons */}
+      <div style={{ display: 'flex', gap: 2, marginBottom: 8 }}>
+        {CLS.map(c => (
+          <ClsButton
+            key={c.id}
+            cls={c}
+            active={classification === c.id}
+            onClick={() => setClassification(c.id)}
+          />
+        ))}
       </div>
 
       {/* histogram */}

@@ -8,6 +8,13 @@ export const RAMPS = {
   pivot:   ['#9B3D2E', '#E6A693', '#F2EDE5', '#A8B4E0', '#2A3C8F'],
 };
 
+export const DENSITY_RAMPS = {
+  violet: ['#1B1530', '#3D2870', '#6B4FBB', '#A98AE6', '#E6D8FF'],
+  warm:   ['#1A0F08', '#5C1F0E', '#C24A1D', '#F0853A', '#FFD79A'],
+  cyan:   ['#062029', '#0F4E5F', '#179BB3', '#5FD3DC', '#C7F4F4'],
+  mono:   ['#0E1117', '#2D333E', '#5A6170', '#B2B6BF', '#FFFFFF'],
+};
+
 export const RAMP_META = {
   indigo:  { label: 'Índigo',  kind: 'sequential' },
   viridis: { label: 'Viridis', kind: 'sequential' },

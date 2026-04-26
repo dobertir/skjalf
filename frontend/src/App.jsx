@@ -182,7 +182,9 @@ function AddressLayerPanel({ filename, count, visible, setVisible, mode, setMode
             <div style={{ marginBottom: 8 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--ink-400)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Radio</span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-600)' }}>{radius}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-600)' }}>
+                  {radius * 30 >= 1000 ? `${(radius * 30 / 1000).toFixed(1)} km` : `${radius * 30} m`}
+                </span>
               </div>
               <input type="range" min="14" max="56" step="2" value={radius} onChange={e => setRadius(+e.target.value)} style={{ width: '100%', accentColor: swatchColor }}/>
             </div>

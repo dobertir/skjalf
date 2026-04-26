@@ -110,6 +110,19 @@ body   { height: 100%; overflow: hidden; }
 }
 .geo-seg button.active .scale { color: rgba(255,255,255,0.7); }
 
+/* ── Scale control — offset past the 232px sidebar ───────────────── */
+.leaflet-bottom.leaflet-left .leaflet-control-scale {
+  margin-left: 248px;
+}
+.leaflet-control-scale-line {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-400);
+  background: rgba(15, 23, 42, 0.72);
+  border-color: var(--ink-400);
+  backdrop-filter: blur(4px);
+}
+
 /* ── Zoom toast ───────────────────────────────────────────────────── */
 .zoom-toast {
   position: absolute; bottom: 90px; left: 50%; transform: translateX(-50%);

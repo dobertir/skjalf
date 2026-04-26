@@ -1,4 +1,4 @@
-import { MapContainer, TileLayer, GeoJSON, useMapEvents, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, GeoJSON, useMapEvents, useMap, ScaleControl } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
 import L from 'leaflet';
@@ -119,34 +119,40 @@ function buildHexBins(points, radiusMeters) {
   });
 }
 
+// ── Pane bootstrap (must render before MapContent and UserPointsLayer) ────────
+function MapPanesSetup() {
+  const map = useMap();
+  useEffect(() => {
+    // leaflet default z-indices: tilePane=200, overlayPane=400, shadowPane=500,
+    // markerPane=600, tooltipPane=650, popupPane=700.
+    // coveragePane must be below overlayPane so leaflet.heat canvas (overlayPane)
+    // sits on top even before we manually move it to heatmapPane.
+    [
+      { name: 'coveragePane', z: 350 },   // choropleth
+      { name: 'userDataPane', z: 490 },   // hexbin / points
+      { name: 'heatmapPane',  z: 620 },   // heatmap canvas
+    ].forEach(({ name, z }) => {
+      if (!map.getPane(name)) {
+        const p = map.createPane(name);
+        p.style.zIndex        = String(z);
+        p.style.pointerEvents = 'none';
+      }
+    });
+  }, [map]);
+  return null;
+}
+
 // ── User points layer ─────────────────────────────────────────────────────────
 function UserPointsLayer({ userPoints, tagCol, addrRamp, vizMode, addrRadius, addrIntensity, addrVisible }) {
   const map = useMap();
 
+  // Control heatmap pane visibility / opacity (canvas is in heatmapPane after fix)
   useEffect(() => {
-    if (map) {
-      if (!map.getPane('heatmapPane')) {
-        const hPane = map.createPane('heatmapPane');
-        hPane.style.zIndex = "620";
-        hPane.style.pointerEvents = 'none';
-      }
-      if (!map.getPane('coveragePane')) {
-        const cPane = map.createPane('coveragePane');
-        cPane.style.zIndex = "450";
-        cPane.style.pointerEvents = 'none';
-      }
-    }
-  }, [map]);
-
-  // 2. Controlar la opacidad del Heatmap de forma segura
-  useEffect(() => {
-    const pane = map.getPane('heatmapPane');
-    if (pane) {
-      // Solo mostramos el pane si el modo es heatmap y es visible
-      const isHeatmap = vizMode === 'heatmap' && addrVisible;
-      pane.style.opacity = isHeatmap ? String(addrIntensity) : '0';
-      pane.style.display = isHeatmap ? 'block' : 'none';
-    }
+    const hPane = map.getPane('heatmapPane');
+    if (!hPane) return;
+    const active = vizMode === 'heatmap' && addrVisible;
+    hPane.style.opacity = active ? String(addrIntensity) : '0';
+    hPane.style.display = active ? '' : 'none';
   }, [addrIntensity, vizMode, addrVisible, map]);
 
   useEffect(() => {
@@ -155,36 +161,44 @@ function UserPointsLayer({ userPoints, tagCol, addrRamp, vizMode, addrRadius, ad
     const palette = DENSITY_RAMPS[addrRamp] || DENSITY_RAMPS.violet;
     const layers  = [];
 
-    const ensurePane = (name, zIndex) => {
-      if (!map.getPane(name)) map.createPane(name);
-      map.getPane(name).style.zIndex        = String(zIndex);
-      map.getPane(name).style.pointerEvents = 'none';
-    };
-
     if (vizMode === 'heatmap') {
-      ensurePane('heatmapPane', 650);
-      map.getPane('heatmapPane').style.opacity = String(addrIntensity);
       const gradient = {
-        0.0: palette[1],
-        0.4: palette[2],
-        0.7: palette[3],
-        1.0: palette[4],
+        0.00: 'rgba(0,0,0,0)',  // transparent → map shows through in sparse areas
+        0.20: palette[0],
+        0.40: palette[1],
+        0.60: palette[2],
+        0.80: palette[3],
+        1.00: palette[4],
       };
       const heat = L.heatLayer(
         userPoints.map(p => [p.lat, p.lon, 1.0]),
-        { 
-          radius: addrRadius, 
-          blur: Math.round(addrRadius * 0.5), 
-          maxZoom: 17, 
-          gradient, 
-          minOpacity: 0.6,
-          pane: 'heatmapPane'
-        }
+        { radius: addrRadius, blur: Math.round(addrRadius * 0.5), maxZoom: 17, gradient, minOpacity: 0.4 }
       ).addTo(map);
-      layers.push({ remove: () => heat.remove() });
+
+      // leaflet.heat v0.2.0 ignores the pane option and hard-codes overlayPane
+      // (z-index 400) in its onAdd. Move the canvas to heatmapPane (z-index 620)
+      // so it renders above coveragePane (choropleth) and userDataPane.
+      const hPane = map.getPane('heatmapPane');
+      if (hPane && heat._canvas) {
+        hPane.appendChild(heat._canvas);
+      }
+
+      layers.push({
+        remove: () => {
+          try {
+            // Restore canvas to overlayPane before heat.onRemove tries to
+            // removeChild from there, or it will throw a NotFoundError.
+            if (heat._canvas) {
+              map.getPanes().overlayPane.appendChild(heat._canvas);
+            }
+            heat.remove();
+          } catch (e) {
+            console.warn('Error cleaning heatmap:', e);
+          }
+        },
+      });
 
     } else if (vizMode === 'hexbin') {
-      ensurePane('coveragePane', 400);
       const radiusMeters = addrRadius * 30;
       const bins  = buildHexBins(userPoints, radiusMeters);
       const maxN  = Math.max(1, ...bins.map(b => b.n));
@@ -198,7 +212,7 @@ function UserPointsLayer({ userPoints, tagCol, addrRamp, vizMode, addrRadius, ad
           color:       palette[Math.min(palette.length - 1, palIdx + 1)],
           opacity:     0.45,
           weight:      0.8,
-          pane:        'coveragePane',
+          pane:        'userDataPane',
         }).addTo(group);
       });
       group.addTo(map);
@@ -243,7 +257,6 @@ function UserPointsLayer({ userPoints, tagCol, addrRamp, vizMode, addrRadius, ad
       layers.push({ remove: () => map.removeLayer(cluster) });
 
     } else { // 'points'
-      ensurePane('coveragePane', 450);
       const group = L.layerGroup();
       userPoints.forEach(p => {
         L.circleMarker([p.lat, p.lon], {
@@ -252,7 +265,7 @@ function UserPointsLayer({ userPoints, tagCol, addrRamp, vizMode, addrRadius, ad
           fillOpacity: 0.9,
           color:       palette[4],
           weight:      0.8,
-          pane:        'coveragePane',
+          pane:        'userDataPane',
         }).addTo(group);
       });
       group.addTo(map);
@@ -292,7 +305,9 @@ export default function MapView({
         style={{ height: '100%', width: '100%' }}
         zoomControl={false}
       >
+        <MapPanesSetup />
         <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
+        <ScaleControl position="bottomleft" imperial={false} />
         <MapContent
           setHoverInfo={setHoverInfo}
           activeVar={activeVar}

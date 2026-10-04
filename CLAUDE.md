@@ -16,12 +16,6 @@ Frontend: React 19 (Vite), Tailwind CSS v4, React-Leaflet.
 Datos: Archivos Parquet de cartografía censal de Chile (Manzanas y Distritos).
 
 3. Estado Actual
-Backend: Funcional. Posee un script preprocesar.py que genera un distritos_master.parquet optimizado. El servidor main.py maneja endpoints de geometría y geocodificación por lotes.
+Backend: Funcional. Posee un script preprocesar.py que genera un distritos_master.parquet optimizado. El servidor main.py maneja endpoints de geometría y geocodificación por lotes. Requiere `pip install -r requirements.txt` (geopandas, etc.) en el entorno activo antes de correr — si falta, falla con `ModuleNotFoundError`.
 
-Frontend: En estado de debugging. La pantalla se muestra en blanco. Se sospecha de:
-
-Conflictos de dependencia entre React 19 y react-leaflet-heatmap-layer.
-
-Errores de importación en App.jsx tras la limpieza de la plantilla de Vite.
-
-Uso de hooks de Leaflet fuera de contexto en MapView.jsx.
+Frontend: Build limpio (`npm run build` sin errores). El bug de pantalla en blanco reportado antes quedó resuelto por los commits posteriores de UI (heatmap, legend, sidebar).
